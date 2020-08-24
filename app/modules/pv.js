@@ -4,12 +4,14 @@ const moment = require('moment');
 const pvoutputclient = new pvoutput({
     debug: false,
     apiKey: process.env.PVOUTPUT_APIKEY,
-    systemId: process.env.PVOUTPUT_SYSTEMID
+    systemId: process.env.PVOUTPUT_SYSTEMID,
 });
+
+const table = process.env.TABLE;
 
 const convertTimestampToMoment = function (date, time) {
     const [hour, minute] = time.split(':');
-    let timestamp = moment(date);
+    let timestamp = moment(date).tz('Europe/Amsterdam');
     timestamp.hour(hour);
     timestamp.minute(minute);
     return timestamp;
@@ -17,16 +19,19 @@ const convertTimestampToMoment = function (date, time) {
 
 const writeInflux = function(influxClient, pvoutput) {
     const timestamp = convertTimestampToMoment(pvoutput.date, pvoutput.time);
-    return influxClient.write('pvstatus')
+    const postFix = process.env.FIELD_POSTFIX;
+
+    const fields = {};
+    fields['energyGeneration' + postFix] = pvoutput.energyGeneration || 0;
+    fields['powerGeneration' + postFix] = pvoutput.powerGeneration || 0;
+    fields['temperature' + postFix] =  pvoutput.temperature || undefined;
+    fields['voltage' + postFix] = pvoutput.voltage || 0;
+
+    return influxClient.write(table)
     .time(timestamp.format('X'), 's')
-    .field({
-        energyGeneration: pvoutput.energyGeneration || 0,
-        powerGeneration: pvoutput.powerGeneration || 0,
-        temperature: pvoutput.temperature || undefined,
-        voltage: pvoutput.voltage || 0,
-    })
+    .field(fields)
     .then(() => {
-        console.debug(`${Date.now()} pv: write success`);
+        console.debug(`${Date.now()} pv: write success for ${pvoutput.date}, ${pvoutput.time}, timestamp: ${timestamp.format('X')} to table: ${table}`);
         return true;
     })
     .catch(err => console.error(`${Date.now()} pv: write failed ${err.message}`));

@@ -1,5 +1,3 @@
-node_modules
-*.txt
+nohup.out
+run.sh
 .env
-*.swp
-.node-persist
