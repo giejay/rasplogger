@@ -22,10 +22,13 @@ const writeInflux = function(influxClient, pvoutput) {
     const postFix = process.env.FIELD_POSTFIX;
 
     const fields = {};
-    fields['energyGeneration' + postFix] = pvoutput.energyGeneration || 0;
-    fields['powerGeneration' + postFix] = pvoutput.powerGeneration || 0;
-    fields['temperature' + postFix] =  pvoutput.temperature || undefined;
-    fields['voltage' + postFix] = pvoutput.voltage || 0;
+    fields['energyGeneration'] = pvoutput.energyGeneration || 0;
+    fields['powerGeneration'] = pvoutput.powerGeneration || 0;
+    fields['temperature'] =  pvoutput.temperature || undefined;
+    fields['voltage'] = pvoutput.voltage || 0;
+    fields['site'] = postfix;
+    fields['date'] = pvoutput.date;
+    fields['time_formatted'] = pvoutput.time;
 
     return influxClient.write(table)
     .time(timestamp.format('X'), 's')
