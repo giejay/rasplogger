@@ -26,12 +26,15 @@ const writeInflux = function(influxClient, pvoutput) {
     fields['powerGeneration'] = pvoutput.powerGeneration || 0;
     fields['temperature'] =  pvoutput.temperature || undefined;
     fields['voltage'] = pvoutput.voltage || 0;
-    fields['site'] = postfix;
-    fields['date'] = pvoutput.date;
+//    fields['site'] = postFix;
+    fields['date'] = moment(pvoutput.date).format('YYYY-MM-DD');
     fields['time_formatted'] = pvoutput.time;
 
     return influxClient.write(table)
     .time(timestamp.format('X'), 's')
+    .tag({
+         site: postFix
+     })
     .field(fields)
     .then(() => {
         console.debug(`${Date.now()} pv: write success for ${pvoutput.date}, ${pvoutput.time}, timestamp: ${timestamp.format('X')} to table: ${table}`);
@@ -41,7 +44,9 @@ const writeInflux = function(influxClient, pvoutput) {
 };
 
 const logPV = function(influx){
-    return pvoutputclient.getStatus().then(function(result) {
+    const time = moment().tz('Europe/Amsterdam').subtract(30, 'minutes').format('HH:mm');
+    console.log('Getting pv output results for ' + time);
+    return pvoutputclient.getStatus(time).then(function(result) {
         if (result.time) {
             return writeInflux(influx, result);
         } else {
